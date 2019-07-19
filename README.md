@@ -23,3 +23,5 @@ Another interesting question around social trading is that whether they have suc
 We will attempt to model the copying behaviour of investors. The model will be expected to predict the likelihood of investment activity on a time interval. Additionally, we will try to predict the portfolio that will be copied by the given investor on the time interval.
 
 The research will begin with an exploratory analysis of the dataset. We will try to take new questions or insights that might come up during the analysis.
+
+Dataset taken from: <https://www.spreadsheet1.com/zulutrade.html>
