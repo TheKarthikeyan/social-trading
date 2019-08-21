@@ -13,6 +13,9 @@ library(car)
 library(naniar)
 library(caret)
 library(stringr)
+library(InformationValue)
+library(ROCR)
+library(Metrics)
 
 zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
 zt2 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2013-07-28.xlsx", na = "N/A")
@@ -109,7 +112,7 @@ test.data <- zt1_non_NA[test.rows,]
 
 # Some static definition
 cook_distance_threshold <- 1
-gvif_threshold <- 2
+gvif_threshold <- 4
 p_val_threshold <- 0.1
 
 # Multi-collinearity check begin
@@ -141,10 +144,10 @@ model <- glm(Follow ~ .,
              data = train.data,
              family = poisson(link = "log"))
 
+summary(model)
+
 
 del_p_coloumns <- vector('numeric')
-del_p_coloumns
-which(colnames(train.data)==names(li[li == max(li[2:length(li)])]))
 
 while(TRUE) {
   li <- summary(model)$coefficients[,4]
@@ -171,15 +174,41 @@ model <- glm(Follow ~ .,
 summary(model)
 # Model fitting end
 
-exp(coef(model))
-# Outlier and influential observation check begin
 
 plot(cooks.distance(model)) # All observations are within cutoff 1
 train.data <- train.data[cooks.distance(model)<cook_distance_threshold,]
 
 # Outlier and influential observation check end
 
+# ROC with plot
+pred <- predict(model, type='response')
+optCutOff <- optimalCutoff(train.data$Follow, pred)[1]
+table(train.data$Follow,pred>optCutOff)
+
+
+ROCRpred <- prediction(pred, train.data$Follow)
+ROCRperf <- performance(ROCRpred, 'tpr','fpr')
+plot(ROCRperf, colorize = TRUE, text.adj = c(-0.2,1.7))
+
+# AUC - 0.8787
+auc(actual = train.data$Follow,predicted = pred)
 
 #========================================================================#
 # Model building - End                                                   #
 #========================================================================#
+
+#========================================================================#
+# Fitting model - Begin                                                  #
+#========================================================================#
+
+pred <- predict(model,type='response', newdata=test.data)
+confMatrix <- table(test.data$Follow,pred>optCutOff)
+
+print(confMatrix)
+
+accuracy <- sum(diag(confMatrix))/sum(confMatrix) # 0.9495
+sens <- sensitivity(test.data$Follow,pred,threshold = optCutOff) # 0.77684
+spec <- specificity(test.data$Follow,pred,threshold = optCutOff) # 0.9987981
+
+cat("Accuracy: ",accuracy,"\nSensitivity: ",sens,"\nSpecificity: ",spec)
+
