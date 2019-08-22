@@ -11,6 +11,7 @@ library(ggplot2)
 library(dplyr)
 library(car)
 library(naniar)
+library(pscl)
 library(caret)
 library(stringr)
 library(InformationValue)
@@ -22,27 +23,28 @@ zt2 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2013-07-28.xlsx", na = "
 zt3 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-01-05.xlsx", na = "N/A")
 zt4 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-02-09.xlsx", na = "N/A")
 
-#========================================================================#
-# Data Exploration - Begin                                               #
-#========================================================================#
-
-str(zt1)
-
 # Let us clean the data columns for spaces, commas
 names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
 names(zt2)<-str_replace_all(names(zt2), c(" " = "." , "," = "" , "%" = ""  ))
 names(zt3)<-str_replace_all(names(zt3), c(" " = "." , "," = "" , "%" = ""  ))
 names(zt4)<-str_replace_all(names(zt4), c(" " = "." , "," = "" , "%" = ""  ))
 
-vis_miss(zt1)
-gg_miss_upset(zt1)
-n_var_miss(zt1)
+#========================================================================#
+# Data Exploration - Begin                                               #
+#========================================================================#
 
-gg_miss_upset(zt1, nsets = n_var_miss(zt1))
+str(zt2)
+
+vis_miss(zt1)
+gg_miss_upset(zt2)
+n_var_miss(zt2)
+
+gg_miss_upset(zt4, nsets = n_var_miss(zt4))
 
 zt1$Ranking[is.na(zt1$Open.Positions.Pips)]
 
 zt1 <- zt1[-16828,]
+zt4 <- zt4[-14404,]
 gg_miss_upset(zt1, nsets = n_var_miss(zt1))
 gg_miss_var(zt1,show_pct = TRUE)
 
@@ -66,26 +68,26 @@ length(intersect(zt3$Provider.ID,zt4$Provider.ID))
 # Data Preparation - Begin                                               #
 #========================================================================#
 
-zt1_non_NA <- zt1[,c(2,4:13,16:20,22:24,37:42)]
-str(zt1_non_NA)
-# zt1_non_NA$Ranking <- factor(zt1_non_NA$Ranking, ordered = T)
-zt1_non_NA$Amount_Following_Log <- log(zt1_non_NA$Amount.Following+1)
-zt1_non_NA$Has.Live.Followers[zt1_non_NA$Has.Live.Followers=="Yes"] <- 1
-zt1_non_NA$Has.Live.Followers[zt1_non_NA$Has.Live.Followers=="No"] <- 0
-zt1_non_NA$Has.Live.Followers <- as.numeric(zt1_non_NA$Has.Live.Followers)
-zt1_non_NA$Economic.Event.Trade[zt1_non_NA$Economic.Event.Trade==TRUE] <-1
-zt1_non_NA$Economic.Event.Trade[zt1_non_NA$Economic.Event.Trade==FALSE] <-0
-#zt1_non_NA$`Has Live Followers` <- factor(zt1_non_NA$`Has Live Followers`)
-zt1_non_NA$Viewed_Log <- log(zt1_non_NA$Viewed+1)
-#zt1_non_NA$`Trading Own Money` <- factor(zt1_non_NA$`Trading Own Money`)
-zt1_non_NA$Is.EA <- as.numeric(zt1_non_NA$Is.EA)
-#zt1_non_NA$`Economic Event Trade` <- factor(as.numeric(zt1_non_NA$`Economic Event Trade`))
-zt1_non_NA$Follow <- vector('numeric', length = dim(zt1_non_NA)[1])
-zt1_non_NA$Follow[zt1_non_NA$Followers>0] <- 1
-zt1_non_NA$Follow[zt1_non_NA$Followers<=0] <- 0
-zt1_non_NA$Amount.Following <- NULL
-zt1_non_NA$Viewed <- NULL
-zt1_non_NA$Country.ISO.Code <- NULL
+ztClean <- zt1[,c(2,4:13,16:20,22:24,37:42)]
+str(ztClean)
+# ztClean$Ranking <- factor(ztClean$Ranking, ordered = T)
+ztClean$Amount_Following_Log <- log(ztClean$Amount.Following+1)
+ztClean$Has.Live.Followers[ztClean$Has.Live.Followers=="Yes"] <- 1
+ztClean$Has.Live.Followers[ztClean$Has.Live.Followers=="No"] <- 0
+ztClean$Has.Live.Followers <- as.numeric(ztClean$Has.Live.Followers)
+ztClean$Economic.Event.Trade[ztClean$Economic.Event.Trade==TRUE] <-1
+ztClean$Economic.Event.Trade[ztClean$Economic.Event.Trade==FALSE] <-0
+#ztClean$`Has Live Followers` <- factor(ztClean$`Has Live Followers`)
+ztClean$Viewed_Log <- log(ztClean$Viewed+1)
+#ztClean$`Trading Own Money` <- factor(ztClean$`Trading Own Money`)
+ztClean$Is.EA <- as.numeric(ztClean$Is.EA)
+#ztClean$`Economic Event Trade` <- factor(as.numeric(ztClean$`Economic Event Trade`))
+ztClean$Follow <- vector('numeric', length = dim(ztClean)[1])
+ztClean$Follow[ztClean$Followers>0] <- 1
+ztClean$Follow[ztClean$Followers<=0] <- 0
+ztClean$Amount.Following <- NULL
+ztClean$Viewed <- NULL
+ztClean$Country.ISO.Code <- NULL
 #========================================================================#
 # Data Preparation - End                                                 #
 #========================================================================#
@@ -96,87 +98,109 @@ zt1_non_NA$Country.ISO.Code <- NULL
 
 set.seed(777)
 
-train.rows <- sample(rownames(zt1_non_NA),dim(zt1_non_NA)[1]*0.8)
-test.rows <- setdiff(rownames(zt1_non_NA),train.rows)
+train.rows <- sample(rownames(ztClean),dim(ztClean)[1]*0.8)
+test.rows <- setdiff(rownames(ztClean),train.rows)
 
-train.data <- zt1_non_NA[train.rows,]
-test.data <- zt1_non_NA[test.rows,]
+train.data <- ztClean[train.rows,]
+test.data <- ztClean[test.rows,]
 
 #========================================================================#
 # Data Separation - End                                                  #
 #========================================================================#
 
 #========================================================================#
-# Model building - Begin                                                 #
+# Static definition - Begin                                              #
 #========================================================================#
+
+formula <- train.data$Follow ~ .
+#family <- poisson(link = "log")
+family <- quasipoisson(link = "log")
 
 # Some static definition
 cook_distance_threshold <- 1
 gvif_threshold <- 4
 p_val_threshold <- 0.1
 
-# Multi-collinearity check begin
+#========================================================================#
+# Static definition - End                                                #
+#========================================================================#
 
-del_v_coloumns <- vector('character')
+#========================================================================#
+# Utility Functions - Begin                                              #
+#========================================================================#
 
-
-while(TRUE) {
-  ds = train.data[,setdiff(names(train.data),del_v_coloumns)]
-  vfit <- vif(glm(train.data$Follow ~ .,
-                  data = ds,
-                  family = poisson(link = "log")))
-  if(max(vfit)>gvif_threshold) {
-    del_v_coloumns <- append(del_v_coloumns,names(ds)[which(vfit == max(vfit))]) 
-    cat("Removing coloumn ",tail(del_v_coloumns,1)," with GVIF:",max(vfit),"\n")
-  } else {
-    break;
-  }
+getGBMModel <- function(formula, family, data) {
+  model <- glm(formula = formula,
+               family = family,
+               data = data)
+  return(model)
 }
 
+getMulticollinearColumns <- function(data) {
+  del_v_coloumns <- vector('character')
+  
+  while(TRUE) {
+    ds = train.data[,setdiff(names(train.data),del_v_coloumns)]
+    vfit <- vif(getGBMModel(formula, family, data = ds))
+    if(max(vfit)>gvif_threshold) {
+      del_v_coloumns <- append(del_v_coloumns,names(ds)[which(vfit == max(vfit))]) 
+      cat("Removing coloumn ",tail(del_v_coloumns,1)," with GVIF:",max(vfit),"\n")
+    } else {
+      break;
+    }
+  }
+  return(del_v_coloumns)
+}
+
+getInsignificantColumns <- function(data) {
+  del_p_coloumns <- vector('numeric')
+  ds = data
+  model <- getGBMModel(formula, family, data = ds)
+  while(TRUE) {
+    li <- summary(model)$coefficients[,4]
+    if(max(li[2:length(li)])>p_val_threshold) {
+      del_p_coloumns <- append(del_p_coloumns,which(colnames(train.data)==names(li[li == max(li[2:length(li)])])))
+      cat("Removing coloumn ",names(which(li == max(li[2:length(li)])))," with P-value:",max(li[2:length(li)]),"\n")
+      # Recalculating model
+      ds = train.data[,-del_p_coloumns]
+      model <- getGBMModel(formula, family, data = ds)
+    } else {
+      break;
+    }
+  }
+  return(del_p_coloumns)
+}
+
+#========================================================================#
+# Utility Functions - End                                                #
+#========================================================================#
+
+#========================================================================#
+# Model building - Begin                                                 #
+#========================================================================#
+
+
+# Multi-collinearity check begin
+
+multiCollinearColumns <- getMulticollinearColumns(train.data)
+
 # Removing multi-collinear columns
-train.data <- subset(train.data,select = names(train.data)[!names(train.data) %in% del_v_coloumns])
+train.data <- subset(train.data,select = names(train.data)[!names(train.data) %in% multiCollinearColumns])
 
 # Multi-collinearity check end
 
 # Model fitting begin
 
-model <- glm(Follow ~ .,
-             data = train.data,
-             family = poisson(link = "log"))
-
+inSignificantColumns <- getInsignificantColumns(train.data)
+train.data = train.data[,-inSignificantColumns]
+model <- getGBMModel(formula, family, data = train.data)
 summary(model)
 
-
-del_p_coloumns <- vector('numeric')
-
-while(TRUE) {
-  li <- summary(model)$coefficients[,4]
-  if(max(li[2:length(li)])>p_val_threshold) {
-    del_p_coloumns <- append(del_p_coloumns,which(colnames(train.data)==names(li[li == max(li[2:length(li)])])))
-    cat("Removing coloumn ",names(which(li == max(li[2:length(li)])))," with P-value:",max(li[2:length(li)]),"\n")
-    # Recalculating model
-    ds = train.data[,-del_p_coloumns]
-    model <- glm(Follow ~ .,
-                    data = ds,
-                    family=poisson(link = "log"))
-  } else {
-    break;
-  }
-}
-
-train.data = train.data[,-del_p_coloumns]
-
-
-model <- glm(Follow ~ .,
-             data = train.data,
-             family = poisson(link = "log"))
-
-summary(model)
 # Model fitting end
 
+# Outlier and influential observation check begin
 
 plot(cooks.distance(model)) # All observations are within cutoff 1
-train.data <- train.data[cooks.distance(model)<cook_distance_threshold,]
 
 # Outlier and influential observation check end
 
