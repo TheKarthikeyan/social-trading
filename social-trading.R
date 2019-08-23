@@ -19,13 +19,13 @@ library(ROCR)
 library(Metrics)
 library(openxlsx)
 
-# zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
+#zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
 # zt2 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2013-07-28.xlsx", na = "N/A")
 # zt3 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-01-05.xlsx", na = "N/A")
 # zt4 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-02-09.xlsx", na = "N/A")
 
 # Let us clean the data columns for spaces, commas
-# names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
+#names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
 # names(zt2)<-str_replace_all(names(zt2), c(" " = "." , "," = "" , "%" = ""  ))
 # names(zt3)<-str_replace_all(names(zt3), c(" " = "." , "," = "" , "%" = ""  ))
 # names(zt4)<-str_replace_all(names(zt4), c(" " = "." , "," = "" , "%" = ""  ))
@@ -221,7 +221,7 @@ ROCRpred <- prediction(pred, train.data$Follow)
 ROCRperf <- performance(ROCRpred, 'tpr','fpr')
 plot(ROCRperf, colorize = TRUE, text.adj = c(-0.2,1.7))
 
-# AUC - 0.8787
+# AUC - 0.9430
 auc(actual = train.data$Follow,predicted = pred)
 
 #========================================================================#
