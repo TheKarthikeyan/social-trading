@@ -17,42 +17,36 @@ library(stringr)
 library(InformationValue)
 library(ROCR)
 library(Metrics)
+library(openxlsx)
 
-zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
-zt2 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2013-07-28.xlsx", na = "N/A")
-zt3 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-01-05.xlsx", na = "N/A")
-zt4 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-02-09.xlsx", na = "N/A")
+# zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
+# zt2 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2013-07-28.xlsx", na = "N/A")
+# zt3 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-01-05.xlsx", na = "N/A")
+# zt4 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-02-09.xlsx", na = "N/A")
 
 # Let us clean the data columns for spaces, commas
-names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
-names(zt2)<-str_replace_all(names(zt2), c(" " = "." , "," = "" , "%" = ""  ))
-names(zt3)<-str_replace_all(names(zt3), c(" " = "." , "," = "" , "%" = ""  ))
-names(zt4)<-str_replace_all(names(zt4), c(" " = "." , "," = "" , "%" = ""  ))
+# names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
+# names(zt2)<-str_replace_all(names(zt2), c(" " = "." , "," = "" , "%" = ""  ))
+# names(zt3)<-str_replace_all(names(zt3), c(" " = "." , "," = "" , "%" = ""  ))
+# names(zt4)<-str_replace_all(names(zt4), c(" " = "." , "," = "" , "%" = ""  ))
+# 
+# zt1 <- zt1[-16828,]
+# zt4 <- zt4[-14404,]
+
+zt1 <- read_excel("Dataset/Excel/Data/zt1.xlsx")
+zt2 <- read_excel("Dataset/Excel/Data/zt2.xlsx")
+zt3 <- read_excel("Dataset/Excel/Data/zt3.xlsx")
+zt4 <- read_excel("Dataset/Excel/Data/zt4.xlsx")
 
 #========================================================================#
 # Data Exploration - Begin                                               #
 #========================================================================#
 
-str(zt2)
+# vis_miss(zt1)
+# gg_miss_upset(zt2)
 
-vis_miss(zt1)
-gg_miss_upset(zt2)
-n_var_miss(zt2)
-
-gg_miss_upset(zt4, nsets = n_var_miss(zt4))
-
-zt1$Ranking[is.na(zt1$Open.Positions.Pips)]
-
-zt1 <- zt1[-16828,]
-zt4 <- zt4[-14404,]
 gg_miss_upset(zt1, nsets = n_var_miss(zt1))
 gg_miss_var(zt1,show_pct = TRUE)
-
-plot(zt1$Pips.Profit)
-fivenum(zt1$Pips.Profit)
-boxplot(zt1$Pips.Profit)
-
-
 
 # Checking repeated members in datasets
 length(intersect(zt1$Provider.ID,zt2$Provider.ID))
@@ -67,27 +61,40 @@ length(intersect(zt3$Provider.ID,zt4$Provider.ID))
 #========================================================================#
 # Data Preparation - Begin                                               #
 #========================================================================#
+# 
+# cleanZTData <- function(zt) {
+#   ztClean <- zt[,c(2,4:13,16:20,22:24,37:42)]
+#   str(ztClean)
+#   # ztClean$Ranking <- factor(ztClean$Ranking, ordered = T)
+#   ztClean$Amount_Following_Log <- log(ztClean$Amount.Following+1)
+#   ztClean$Has.Live.Followers[ztClean$Has.Live.Followers=="Yes"] <- 1
+#   ztClean$Has.Live.Followers[ztClean$Has.Live.Followers=="No"] <- 0
+#   ztClean$Has.Live.Followers <- as.numeric(ztClean$Has.Live.Followers)
+#   ztClean$Economic.Event.Trade[ztClean$Economic.Event.Trade==TRUE] <-1
+#   ztClean$Economic.Event.Trade[ztClean$Economic.Event.Trade==FALSE] <-0
+#   #ztClean$`Has Live Followers` <- factor(ztClean$`Has Live Followers`)
+#   ztClean$Viewed_Log <- log(ztClean$Viewed+1)
+#   #ztClean$`Trading Own Money` <- factor(ztClean$`Trading Own Money`)
+#   ztClean$Is.EA <- as.numeric(ztClean$Is.EA)
+#   #ztClean$`Economic Event Trade` <- factor(as.numeric(ztClean$`Economic Event Trade`))
+#   ztClean$Follow <- vector('numeric', length = dim(ztClean)[1])
+#   ztClean$Follow[ztClean$Followers>0] <- 1
+#   ztClean$Follow[ztClean$Followers<=0] <- 0
+#   ztClean$Amount.Following <- NULL
+#   ztClean$Viewed <- NULL
+#   ztClean$Country.ISO.Code <- NULL
+#   return(ztClean)
+# }
+# z <- cleanZTData(zt1)
+# write.xlsx(z, 'Dataset/Excel/Data/zt1.xlsx')
+# z <- cleanZTData(zt2)
+# write.xlsx(z, 'Dataset/Excel/Data/zt2.xlsx')
+# z <- cleanZTData(zt3)
+# write.xlsx(z, 'Dataset/Excel/Data/zt3.xlsx')
+# z <- cleanZTData(zt4)
+# write.xlsx(z, 'Dataset/Excel/Data/zt4.xlsx')
 
-ztClean <- zt1[,c(2,4:13,16:20,22:24,37:42)]
-str(ztClean)
-# ztClean$Ranking <- factor(ztClean$Ranking, ordered = T)
-ztClean$Amount_Following_Log <- log(ztClean$Amount.Following+1)
-ztClean$Has.Live.Followers[ztClean$Has.Live.Followers=="Yes"] <- 1
-ztClean$Has.Live.Followers[ztClean$Has.Live.Followers=="No"] <- 0
-ztClean$Has.Live.Followers <- as.numeric(ztClean$Has.Live.Followers)
-ztClean$Economic.Event.Trade[ztClean$Economic.Event.Trade==TRUE] <-1
-ztClean$Economic.Event.Trade[ztClean$Economic.Event.Trade==FALSE] <-0
-#ztClean$`Has Live Followers` <- factor(ztClean$`Has Live Followers`)
-ztClean$Viewed_Log <- log(ztClean$Viewed+1)
-#ztClean$`Trading Own Money` <- factor(ztClean$`Trading Own Money`)
-ztClean$Is.EA <- as.numeric(ztClean$Is.EA)
-#ztClean$`Economic Event Trade` <- factor(as.numeric(ztClean$`Economic Event Trade`))
-ztClean$Follow <- vector('numeric', length = dim(ztClean)[1])
-ztClean$Follow[ztClean$Followers>0] <- 1
-ztClean$Follow[ztClean$Followers<=0] <- 0
-ztClean$Amount.Following <- NULL
-ztClean$Viewed <- NULL
-ztClean$Country.ISO.Code <- NULL
+
 #========================================================================#
 # Data Preparation - End                                                 #
 #========================================================================#
@@ -98,11 +105,11 @@ ztClean$Country.ISO.Code <- NULL
 
 set.seed(777)
 
-train.rows <- sample(rownames(ztClean),dim(ztClean)[1]*0.8)
-test.rows <- setdiff(rownames(ztClean),train.rows)
+train.rows <- sample(rownames(zt),dim(zt)[1]*0.8)
+test.rows <- setdiff(rownames(zt),train.rows)
 
-train.data <- ztClean[train.rows,]
-test.data <- ztClean[test.rows,]
+train.data <- zt[train.rows,]
+test.data <- zt[test.rows,]
 
 #========================================================================#
 # Data Separation - End                                                  #
