@@ -19,13 +19,13 @@ library(ROCR)
 library(Metrics)
 library(openxlsx)
 
-#zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
+# zt1 <- read_excel("Dataset/Excel/ZuluTrade 2014-04-06 Summary Data.xlsx", na = "N/A")
 # zt2 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2013-07-28.xlsx", na = "N/A")
 # zt3 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-01-05.xlsx", na = "N/A")
 # zt4 <- read_excel("Dataset/Excel/ZuluTrade Summary Data 2014-02-09.xlsx", na = "N/A")
-
-# Let us clean the data columns for spaces, commas
-#names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
+# 
+# # Let us clean the data columns for spaces, commas
+# names(zt1)<-str_replace_all(names(zt1), c(" " = "." , "," = "" , "%" = "" ))
 # names(zt2)<-str_replace_all(names(zt2), c(" " = "." , "," = "" , "%" = ""  ))
 # names(zt3)<-str_replace_all(names(zt3), c(" " = "." , "," = "" , "%" = ""  ))
 # names(zt4)<-str_replace_all(names(zt4), c(" " = "." , "," = "" , "%" = ""  ))
@@ -33,10 +33,10 @@ library(openxlsx)
 # zt1 <- zt1[-16828,]
 # zt4 <- zt4[-14404,]
 
-zt1 <- read_excel("Dataset/Excel/Data/zt1.xlsx")
-zt2 <- read_excel("Dataset/Excel/Data/zt2.xlsx")
-zt3 <- read_excel("Dataset/Excel/Data/zt3.xlsx")
-zt4 <- read_excel("Dataset/Excel/Data/zt4.xlsx")
+zt1 <- read_excel("Dataset/Excel/Data/FirstStage/zt1.xlsx")
+zt2 <- read_excel("Dataset/Excel/Data/FirstStage/zt2.xlsx")
+zt3 <- read_excel("Dataset/Excel/Data/FirstStage/zt3.xlsx")
+zt4 <- read_excel("Dataset/Excel/Data/FirstStage/zt4.xlsx")
 
 #========================================================================#
 # Data Exploration - Begin                                               #
@@ -45,13 +45,15 @@ zt4 <- read_excel("Dataset/Excel/Data/zt4.xlsx")
 # vis_miss(zt1)
 # gg_miss_upset(zt2)
 
-gg_miss_upset(zt1, nsets = n_var_miss(zt1))
+gg_miss_upset(zt3, nsets = n_var_miss(zt3))
 gg_miss_var(zt1,show_pct = TRUE)
 
 # Checking repeated members in datasets
 length(intersect(zt1$Provider.ID,zt2$Provider.ID))
 length(intersect(zt2$Provider.ID,zt3$Provider.ID))
 length(intersect(zt3$Provider.ID,zt4$Provider.ID))
+
+Reduce(intersect, list(zt1$Provider.ID,zt2$Provider.ID,zt3$Provider.ID,zt4$Provider.ID))
 
 #========================================================================#
 # Data Exploration - End                                                 #
@@ -183,7 +185,7 @@ getInsignificantColumns <- function(data) {
 #========================================================================#
 
 #========================================================================#
-# Model building - Begin                                                 #
+# First stage Model building - Begin                                     #
 #========================================================================#
 
 
@@ -225,14 +227,14 @@ plot(ROCRperf, colorize = TRUE, text.adj = c(-0.2,1.7))
 auc(actual = train.data$Follow,predicted = pred)
 
 #========================================================================#
-# Model building - End                                                   #
+# First stage Model building - End                                       #
 #========================================================================#
 
 #========================================================================#
-# Fitting model - Begin                                                  #
+# First stage fitting model - Begin                                      #
 #========================================================================#
 
-pred <- predict(model,type='response', newdata=test.data)
+pred <- predict(model,type='response', newdata=zt)
 confMatrix <- table(test.data$Follow,pred>optCutOff)
 
 print(confMatrix)
@@ -243,3 +245,6 @@ spec <- specificity(test.data$Follow,pred,threshold = optCutOff) # 0.9987981
 
 cat("Accuracy: ",accuracy,"\nSensitivity: ",sens,"\nSpecificity: ",spec)
 
+#========================================================================#
+# First stage fitting model - End                                        #
+#========================================================================#
