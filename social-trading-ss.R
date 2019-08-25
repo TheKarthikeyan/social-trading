@@ -17,6 +17,7 @@ library(stringr)
 library(InformationValue)
 library(Metrics)
 library(openxlsx)
+library(BBmisc)
 
 
 #========================================================================#
@@ -40,6 +41,29 @@ test.data <- zt[test.rows,]
 # Data Preparation for second stage model - End                          #
 #========================================================================#
 
+#========================================================================#
+# Data Preparation for second stage model - End                          #
+#========================================================================#
+
+getNormalizeValues <- function(z) {
+  P = z$Follow.Prob
+  Fa = z$Follow
+  Fs = z$Followers
+  z$Follow.Prob = NULL
+  z$Follow = NULL
+  z$Followers = NULL
+  z <- as.data.frame(scale(z,center = TRUE, scale = TRUE))
+  z$Follow.Prob = P
+  z$Follow = Fa
+  z$Followers = Fs
+  return(z)
+}
+
+zt <- getNormalizeValues(zt1)
+
+#========================================================================#
+# Data Preparation for second stage model - End                          #
+#========================================================================#
 
 #========================================================================#
 # Static definition - Begin                                              #
@@ -114,7 +138,27 @@ getInsignificantColumns <- function(data) {
 getMulticollinearColumns(train.data)
 # Multi-collinearity check begin
 model <- hurdle(Followers ~ . | 1, family = "poisson", data= train.data)
+# + Trades + Winning.Trades. + Open.Positions.Pips + Amount_Following_Log + Max.Draw.Down. + Follow.Prob
+# + Winning.Trades. + Average.Pips.Per.Trade + Amount_Following_Log + Max.Draw.Down. + Followers
+F <- train.data$Followers
+train.data$Followers <- F
+Z <- train.data$Follow
+train.data$Follow <- Z
+
+train.data <- as.data.frame(scale(train.data))
+train.data$Pips.Profit <- (train.data$Pips.Profit/1000)
+
+model <- zeroinfl(Followers ~ Ranking + Pips.Profit + Trades + Winning.Trades. + Open.Positions.Pips + Amount_Following_Log + Max.Draw.Down. + Follow.Prob | 
+                  1,
+                  dist = "poisson", 
+                  zero.dist = "poisson",
+                  data = train.data)
 summary(model)
+
+pred <- predict(model, newdata = test.data)
+
+mae(test.data$Followers, pred)
+
 
 multiCollinearColumns <- getMulticollinearColumns(train.data)
 
