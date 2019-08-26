@@ -18,6 +18,7 @@ library(InformationValue)
 library(Metrics)
 library(openxlsx)
 library(BBmisc)
+library(corrplot)
 
 
 zt1 <- read_excel("Dataset/Excel/Data/SecondStage/zt1_ss.xlsx")
@@ -77,6 +78,8 @@ test.data <- zt[test.rows,]
 # Second stage Model building - Begin                                    #
 #========================================================================#
 
+corr <- cor(zt)
+corrplot(corr, method = "circle")
 
 model <- zeroinfl(Followers ~ Ranking + Pips.Profit + Trades + Open.Positions.Pips + Max.Draw.Down. + Follow.Prob | 
                   1,
